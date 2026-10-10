@@ -1,21 +1,14 @@
-{
-  "name": "online-social-media-app",
-  "version": "1.0.0",
-  "description": "A simple social media app MVP built with Express and vanilla JavaScript",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
-  },
-  "keywords": [
-    "social-media",
-    "mvp",
-    "express",
-    "javascript"
-  ],
-  "license": "MIT",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2"
-  }
-}
+# Node
+node_modules/
+.env
+coverage/
+
+# Logs
+npm-debug.log*
+
+# Data
+.data/
+
+# OS/editor
+.DS_Store
+.vscode/

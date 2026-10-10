@@ -1,0 +1,367 @@
+const AUTH_STORAGE_KEY = 'online-social-token';
+const app = document.getElementById('app');
+
+const state = {
+  token: localStorage.getItem(AUTH_STORAGE_KEY) || '',
+  user: null,
+  feed: [],
+  notifications: [],
+  selectedUser: null,
+  mode: 'login'
+};
+
+function apiRequest(path, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+    ...(options.headers || {})
+  };
+
+  return fetch(path, { ...options, headers }).then(async (response) => {
+    const content = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(content.error || 'Request failed.');
+    }
+    return content;
+  });
+}
+
+function formatDate(dateString) {
+  return new Date(dateString).toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function renderAuth() {
+  app.innerHTML = `
+    <div class="auth-page">
+      <div class="auth-card">
+        <h1>Welcome to Online</h1>
+        <p class="muted">A modern social media app starter for product teams and builders.</p>
+
+        <div class="auth-form">
+          <div class="form-row ${state.mode === 'login' ? '' : 'hidden'}">
+            <input id="login-email" class="input" type="email" placeholder="Email address" value="aisha@online.app" />
+            <input id="login-password" class="input" type="password" placeholder="Password" value="Password123!" />
+            <button class="primary-btn" id="login-btn">Log in</button>
+          </div>
+
+          <div class="form-row ${state.mode === 'register' ? '' : 'hidden'}">
+            <input id="register-name" class="input" type="text" placeholder="Full name" />
+            <input id="register-username" class="input" type="text" placeholder="Username" />
+            <input id="register-email" class="input" type="email" placeholder="Email address" />
+            <input id="register-password" class="input" type="password" placeholder="Password" />
+            <button class="primary-btn" id="register-btn">Create account</button>
+          </div>
+        </div>
+
+        <p class="auth-switch">
+          ${state.mode === 'login' ? 'New here?' : 'Already have an account?'}
+          <button class="ghost-btn" id="toggle-mode-btn">${state.mode === 'login' ? 'Create account' : 'Log in'}</button>
+        </p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('toggle-mode-btn').addEventListener('click', () => {
+    state.mode = state.mode === 'login' ? 'register' : 'login';
+    renderAuth();
+  });
+
+  document.getElementById('login-btn')?.addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    try {
+      const response = await apiRequest('/api/v1/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+
+      state.token = response.token;
+      state.user = response.user;
+      localStorage.setItem(AUTH_STORAGE_KEY, state.token);
+      renderApp();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  document.getElementById('register-btn')?.addEventListener('click', async () => {
+    const payload = {
+      name: document.getElementById('register-name').value.trim(),
+      username: document.getElementById('register-username').value.trim(),
+      email: document.getElementById('register-email').value.trim(),
+      password: document.getElementById('register-password').value,
+      bio: 'Building community and good product experiences.'
+    };
+
+    try {
+      const response = await apiRequest('/api/v1/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      state.token = response.token;
+      state.user = response.user;
+      localStorage.setItem(AUTH_STORAGE_KEY, state.token);
+      renderApp();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
+
+async function loadDashboard() {
+  try {
+    const [meResp, feedResp, notificationResp] = await Promise.all([
+      apiRequest('/api/v1/auth/me'),
+      apiRequest('/api/v1/feed'),
+      apiRequest('/api/v1/notifications')
+    ]);
+
+    state.user = meResp.user;
+    state.feed = feedResp;
+    state.notifications = notificationResp;
+  } catch (error) {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    state.token = '';
+    state.user = null;
+    renderAuth();
+  }
+}
+
+async function postContent() {
+  const input = document.getElementById('post-content');
+  const content = input.value.trim();
+
+  if (!content) return;
+
+  try {
+    await apiRequest('/api/v1/posts', {
+      method: 'POST',
+      body: JSON.stringify({
+        content,
+        image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80'
+      })
+    });
+
+    input.value = '';
+    await loadDashboard();
+    renderApp();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function likePost(postId) {
+  try {
+    await apiRequest(`/api/v1/posts/${postId}/like`, { method: 'POST' });
+    await loadDashboard();
+    renderApp();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function commentOnPost(postId, inputEl) {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  try {
+    await apiRequest(`/api/v1/posts/${postId}/comment`, {
+      method: 'POST',
+      body: JSON.stringify({ text })
+    });
+    inputEl.value = '';
+    await loadDashboard();
+    renderApp();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function followUser(userId) {
+  try {
+    await apiRequest(`/api/v1/users/${userId}/follow`, { method: 'POST' });
+    await loadDashboard();
+    renderApp();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function markNotificationRead(notificationId) {
+  try {
+    await apiRequest(`/api/v1/notifications/${notificationId}/read`, { method: 'POST' });
+    await loadDashboard();
+    renderApp();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function renderApp() {
+  if (!state.token || !state.user) {
+    renderAuth();
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">Online</div>
+        <div class="topbar-actions">
+          <div class="user-badge">${state.user.name}</div>
+          <button class="ghost-btn" id="logout-btn">Log out</button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="card">
+            <h3>Profile</h3>
+            <div class="profile-box">
+              <img class="avatar" src="${state.user.avatar}" alt="${state.user.name}" />
+              <div>
+                <strong>${state.user.name}</strong><br />
+                <span class="muted">@${state.user.username}</span>
+              </div>
+              <p class="muted">${state.user.bio}</p>
+              <div>Followers: <strong>${state.user.followers?.length || 0}</strong></div>
+              <div>Following: <strong>${state.user.following?.length || 0}</strong></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Trending</h3>
+            <ul class="trends-list">
+              <li>#ProductDesign</li>
+              <li>#StartupLife</li>
+              <li>#AI</li>
+              <li>#RemoteWork</li>
+            </ul>
+          </div>
+        </aside>
+
+        <main class="main">
+          <div class="card composer">
+            <h3>Create a post</h3>
+            <textarea id="post-content" placeholder="Share your thoughts with your network..."></textarea>
+            <div class="composer-actions">
+              <button class="primary-btn" id="submit-post-btn">Post</button>
+            </div>
+          </div>
+
+          <div class="feed">
+            ${state.feed
+              .map(
+                (post) => `
+                  <article class="post">
+                    <div class="post-header">
+                      <img class="post-avatar" src="${post.author?.avatar || ''}" alt="${post.author?.name || 'User'}" />
+                      <div>
+                        <div class="post-user">${post.author?.name || 'Unknown user'}</div>
+                        <div class="post-meta">@${post.author?.username || 'unknown'} • ${formatDate(post.createdAt)}</div>
+                      </div>
+                    </div>
+                    <p class="post-content">${post.content}</p>
+                    ${post.image ? `<img class="post-image" src="${post.image}" alt="Post image" />` : ''}
+                    <div class="post-actions">
+                      <button class="action-btn" data-like="${post.id}">❤️ ${post.likesCount || 0}</button>
+                      <button class="action-btn" data-comment="${post.id}">💬 ${post.commentsCount || 0}</button>
+                    </div>
+                    <div class="comment-box">
+                      ${post.comments
+                        .map(
+                          (comment) => `
+                            <div class="comment">
+                              <strong>${comment.author?.name || 'User'}:</strong> ${comment.text}
+                            </div>
+                          `
+                        )
+                        .join('')}
+                      <input class="comment-input" data-comment-input="${post.id}" placeholder="Write a comment..." />
+                    </div>
+                  </article>
+                `
+              )
+              .join('')}
+          </div>
+        </main>
+
+        <aside class="aside">
+          <div class="card">
+            <h3>Suggested people</h3>
+            <div class="list-plain">
+              <button class="ghost-btn" data-follow="user-3">Follow Neha</button>
+              <button class="ghost-btn" data-follow="user-2">Follow Rahul</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Notifications</h3>
+            <div class="notification-list">
+              ${state.notifications
+                .map(
+                  (notification) => `
+                    <div class="notification-item">
+                      ${notification.text}
+                      <div style="margin-top: 8px;">
+                        <button class="secondary-btn" data-notify-read="${notification.id}">Mark read</button>
+                      </div>
+                    </div>
+                  `
+                )
+                .join('') || '<div class="notification-item">No notifications yet.</div>'}
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    state.token = '';
+    state.user = null;
+    renderAuth();
+  });
+
+  document.getElementById('submit-post-btn').addEventListener('click', postContent);
+
+  document.querySelectorAll('[data-like]').forEach((button) => {
+    button.addEventListener('click', () => likePost(button.getAttribute('data-like')));
+  });
+
+  document.querySelectorAll('[data-comment-input]').forEach((input) => {
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        commentOnPost(input.dataset.commentInput, input);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-follow]').forEach((button) => {
+    button.addEventListener('click', () => followUser(button.getAttribute('data-follow')));
+  });
+
+  document.querySelectorAll('[data-notify-read]').forEach((button) => {
+    button.addEventListener('click', () => markNotificationRead(button.getAttribute('data-notify-read')));
+  });
+}
+
+async function init() {
+  if (!state.token) {
+    renderAuth();
+    return;
+  }
+
+  await loadDashboard();
+  renderApp();
+}
+
+init();
