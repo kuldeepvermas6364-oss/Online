@@ -1,25 +1,25 @@
 # Online Social Media App
 
-A production-style social media application starter built with Node.js, Express, JWT authentication, and a file-backed persistence layer.
+A production-style social media starter built with Node.js and Express. This version is organized into routes, data access, auth helpers, and a clean frontend shell so it is easier to extend into a real production application.
 
 ## Features
 
+- JWT-based authentication and secure password hashing
 - User registration and login
-- Password hashing with bcrypt
-- JWT-protected routes
-- Post creation, like, and comments
-- News feed with follow logic
-- Direct messaging between users
-- Notification system
-- Responsive single-page frontend
-- File-based persistence for local development
+- Follow system
+- Feed generation for followed users
+- Create, like, and comment on posts
+- Messaging and notifications APIs
+- File-based local persistence for quick development
+- Modular backend architecture for easier scaling
 
 ## Tech stack
 
 - Node.js
 - Express
+- JWT
 - bcryptjs
-- jsonwebtoken
+- dotenv
 - Vanilla JavaScript frontend
 
 ## Quick start
@@ -27,24 +27,30 @@ A production-style social media application starter built with Node.js, Express,
 1. Install dependencies:
    npm install
 
-2. Start the application:
+2. Copy environment template:
+   cp .env.example .env
+
+3. Start the app:
    npm start
 
-3. Open the app in the browser:
+4. Open the app:
    http://localhost:3000
 
-## Demo credentials
+## Demo users
 
-- Aisha: aisha@online.app / Password123!
-- Rahul: rahul@online.app / Password123!
-- Neha: neha@online.app / Password123!
+- aisha@online.app / Password123!
+- rahul@online.app / Password123!
+- neha@online.app / Password123!
 
 ## Project structure
 
-- `server.js` – main Express server and API logic
-- `public/` – frontend HTML, CSS, and JavaScript
-- `data/db.json` – persisted app data
+- `server.js` – application bootstrap
+- `src/data/store.js` – data persistence and seed data
+- `src/routes/` – modular API route files
+- `src/utils/auth.js` – JWT generation and auth middleware
+- `public/` – frontend assets
+- `.env.example` – environment variable template
 
 ## Notes
 
-This starter is designed to be easy to run locally and demonstrates a production-style architecture and feature set, while remaining lightweight for development and demos.
+This is still a local-development starter, not a full cloud production deployment. It is structured to be expanded into PostgreSQL, Redis, WebSockets, containerization, and CI/CD workflows as the product grows.
