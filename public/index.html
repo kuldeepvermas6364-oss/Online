@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online | Social Media</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">Online</div>
+        <nav class="nav">
+          <button class="nav-btn active">Home</button>
+          <button class="nav-btn">Explore</button>
+          <button class="nav-btn">Messages</button>
+          <button class="nav-btn">Profile</button>
+        </nav>
+        <div class="user-pill" id="user-pill">Guest</div>
+      </header>
+
+      <main class="main-layout">
+        <aside class="left-panel">
+          <div class="card">
+            <h3>Profile</h3>
+            <div id="profile-card"></div>
+          </div>
+          <div class="card">
+            <h3>Trending</h3>
+            <ul class="list">
+              <li>#tech</li>
+              <li>#design</li>
+              <li>#travel</li>
+              <li>#food</li>
+            </ul>
+          </div>
+        </aside>
+
+        <section class="feed-panel">
+          <div class="composer card">
+            <h3>Create a post</h3>
+            <textarea id="post-input" rows="4" placeholder="What's happening today?"></textarea>
+            <div class="composer-actions">
+              <button id="post-btn" class="primary-btn">Post</button>
+            </div>
+          </div>
+          <div id="feed"></div>
+        </section>
+
+        <aside class="right-panel">
+          <div class="card">
+            <h3>Messages</h3>
+            <div id="messages-box"></div>
+          </div>
+          <div class="card">
+            <h3>Notifications</h3>
+            <div id="notifications-box"></div>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
